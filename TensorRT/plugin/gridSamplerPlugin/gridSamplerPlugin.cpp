@@ -103,25 +103,25 @@ GridSamplerPlugin::GridSamplerPlugin(const std::string name, int inputChannel, i
 {
 }
 
-GridSamplerPlugin::~GridSamplerPlugin() {}
+GridSamplerPlugin::~GridSamplerPlugin() noexcept {}
 
-const char* GridSamplerPlugin::getPluginType() const
+const char* GridSamplerPlugin::getPluginType() const noexcept
 {
     return GRID_SAMPLER_PLUGIN_NAME;
 }
 
-const char* GridSamplerPlugin::getPluginVersion() const
+const char* GridSamplerPlugin::getPluginVersion() const noexcept
 {
     return GRID_SAMPLER_PLUGIN_VERSION;
 }
 
-int GridSamplerPlugin::getNbOutputs() const
+int GridSamplerPlugin::getNbOutputs() const noexcept
 {
     return 1;
 }
 
 DimsExprs GridSamplerPlugin::getOutputDimensions(
-    int outputIndex, const DimsExprs* inputs, int nbInputs, IExprBuilder& exprBuilder)
+    int outputIndex, const DimsExprs* inputs, int nbInputs, IExprBuilder& exprBuilder) noexcept
 {
     // Validate input arguments
     assert(inputs[0].nbDims == 4);
@@ -134,19 +134,19 @@ DimsExprs GridSamplerPlugin::getOutputDimensions(
     return output;
 }
 
-int GridSamplerPlugin::initialize()
+int GridSamplerPlugin::initialize() noexcept
 {
     return 0;
 }
 
 size_t GridSamplerPlugin::getWorkspaceSize(
-    const PluginTensorDesc* inputs, int nbInputs, const PluginTensorDesc* outputs, int nbOutputs) const
+    const PluginTensorDesc* inputs, int nbInputs, const PluginTensorDesc* outputs, int nbOutputs) const noexcept
 {
     return 0;
 }
 
 int GridSamplerPlugin::enqueue(const PluginTensorDesc* inputDesc, const PluginTensorDesc* outputDesc,
-    const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream)
+    const void* const* inputs, void* const* outputs, void* workspace, cudaStream_t stream) noexcept
 {
     int status = -1;
 
@@ -162,12 +162,12 @@ int GridSamplerPlugin::enqueue(const PluginTensorDesc* inputDesc, const PluginTe
     return status;
 }
 
-size_t GridSamplerPlugin::getSerializationSize() const
+size_t GridSamplerPlugin::getSerializationSize() const noexcept
 {
     return sizeof(size_t) * 5 + sizeof(GridSamplerInterpolation) + sizeof(GridSamplerPadding) + sizeof(bool) + sizeof(DataType);
 }
 
-void GridSamplerPlugin::serialize(void* buffer) const
+void GridSamplerPlugin::serialize(void* buffer) const noexcept
 {
     char* d = reinterpret_cast<char*>(buffer);
     char* a = d;
@@ -184,7 +184,7 @@ void GridSamplerPlugin::serialize(void* buffer) const
 }
 
 bool GridSamplerPlugin::supportsFormatCombination(
-    int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs)
+    int pos, const PluginTensorDesc* inOut, int nbInputs, int nbOutputs) noexcept
 {
     assert(nbInputs == 2 && nbOutputs == 1 && pos < nbInputs + nbOutputs);
     
@@ -195,15 +195,15 @@ bool GridSamplerPlugin::supportsFormatCombination(
     return condition;
 }
 
-void GridSamplerPlugin::terminate() {}
+void GridSamplerPlugin::terminate() noexcept {}
 
-void GridSamplerPlugin::destroy()
+void GridSamplerPlugin::destroy() noexcept
 {
     // This gets called when the network containing plugin is destroyed
     delete this;
 }
 
-IPluginV2DynamicExt* GridSamplerPlugin::clone() const
+IPluginV2DynamicExt* GridSamplerPlugin::clone() const noexcept
 {
     auto plugin
         = new GridSamplerPlugin(mLayerName, mInputChannel, mInputHeight, mInputWidth, 
@@ -212,18 +212,18 @@ IPluginV2DynamicExt* GridSamplerPlugin::clone() const
     return plugin;
 }
 
-void GridSamplerPlugin::setPluginNamespace(const char* libNamespace)
+void GridSamplerPlugin::setPluginNamespace(const char* libNamespace) noexcept
 {
     mNamespace = libNamespace;
 }
 
-const char* GridSamplerPlugin::getPluginNamespace() const
+const char* GridSamplerPlugin::getPluginNamespace() const noexcept
 {
     return mNamespace.c_str();
 }
 
 // Return the DataType of the plugin output at the requested index.
-DataType GridSamplerPlugin::getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const
+DataType GridSamplerPlugin::getOutputDataType(int index, const nvinfer1::DataType* inputTypes, int nbInputs) const noexcept
 {
     // one outputs
     ASSERT(index == 0);
@@ -233,7 +233,7 @@ DataType GridSamplerPlugin::getOutputDataType(int index, const nvinfer1::DataTyp
 
 
 void GridSamplerPlugin::configurePlugin(
-    const DynamicPluginTensorDesc* inputs, int nbInputs, const DynamicPluginTensorDesc* outputs, int nbOutputs)
+    const DynamicPluginTensorDesc* inputs, int nbInputs, const DynamicPluginTensorDesc* outputs, int nbOutputs) noexcept
 {
     ASSERT(nbInputs == 2);
     ASSERT(nbOutputs == 1);
@@ -256,12 +256,12 @@ void GridSamplerPlugin::configurePlugin(
 
 // Attach the plugin object to an execution context and grant the plugin the access to some context resource.
 void GridSamplerPlugin::attachToContext(
-    cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator)
+    cudnnContext* cudnnContext, cublasContext* cublasContext, IGpuAllocator* gpuAllocator) noexcept
 {
 }
 
 // Detach the plugin object from its execution context.
-void GridSamplerPlugin::detachFromContext() {}
+void GridSamplerPlugin::detachFromContext() noexcept {}
 
 GridSamplerPluginCreator::GridSamplerPluginCreator()
 {
@@ -270,24 +270,24 @@ GridSamplerPluginCreator::GridSamplerPluginCreator()
     mFC.fields = mPluginAttributes.data();
 }
 
-GridSamplerPluginCreator::~GridSamplerPluginCreator() {}
+GridSamplerPluginCreator::~GridSamplerPluginCreator() noexcept {}
 
-const char* GridSamplerPluginCreator::getPluginName() const
+const char* GridSamplerPluginCreator::getPluginName() const noexcept
 {
     return GRID_SAMPLER_PLUGIN_NAME;
 }
 
-const char* GridSamplerPluginCreator::getPluginVersion() const
+const char* GridSamplerPluginCreator::getPluginVersion() const noexcept
 {
     return GRID_SAMPLER_PLUGIN_VERSION;
 }
 
-const PluginFieldCollection* GridSamplerPluginCreator::getFieldNames()
+const PluginFieldCollection* GridSamplerPluginCreator::getFieldNames() noexcept
 {
     return &mFC;
 }
 
-IPluginV2* GridSamplerPluginCreator::createPlugin(const char* name, const PluginFieldCollection* fc)
+IPluginV2* GridSamplerPluginCreator::createPlugin(const char* name, const PluginFieldCollection* fc) noexcept
 {
     const PluginField* fields = fc->fields;
     int nbFields = fc->nbFields;
@@ -320,7 +320,7 @@ IPluginV2* GridSamplerPluginCreator::createPlugin(const char* name, const Plugin
 }
 
 IPluginV2* GridSamplerPluginCreator::deserializePlugin(
-    const char* name, const void* serialData, size_t serialLength)
+    const char* name, const void* serialData, size_t serialLength) noexcept
 {
     // This object will be deleted when the network is destroyed,
     auto plugin = new GridSamplerPlugin(name, serialData, serialLength);

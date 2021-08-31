@@ -138,11 +138,9 @@ def modify_onnx(onnx_model_file):
 # The Onnx path is used for Onnx models.
 def build_engine_onnx(model_file):
     with trt.Builder(TRT_LOGGER) as builder, builder.create_network(common.EXPLICIT_BATCH) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
-        builder.max_workspace_size = common.GiB(1)
-        builder.fp16_mode = True
         builder.max_batch_size = 1 # always 1 for explicit batch
         config = builder.create_builder_config()
-        # need to be set along with fp16_mode if config is specified.        
+        config.max_workspace_size = common.GiB(1)        
         config.set_flag(trt.BuilderFlag.FP16)
         profile = builder.create_optimization_profile()
         profile.set_shape('input', (1, 1, 4, 4), (2, 1, 4, 4), (4, 1, 4, 4))
