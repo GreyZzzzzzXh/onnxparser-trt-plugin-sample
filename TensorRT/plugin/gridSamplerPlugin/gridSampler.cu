@@ -60,7 +60,8 @@ __global__ void grid_sampler_2d_kernel(
   CUDA_KERNEL_LOOP(index, nthreads) {
     const int w = index % out_W;
     const int h = (index / out_W) % out_H;
-    const int n = index / (out_H * out_W);
+    const int c = (index / (out_H * out_W)) % C;
+    const int n = index / (C * out_H * out_W);
     const int grid_offset = n * grid_sN + h * grid_sH + w * grid_sW;
 
     // get the corresponding input x, y co-ordinates from grid
@@ -88,38 +89,33 @@ __global__ void grid_sampler_2d_kernel(
       scalar_t se = (ix    - ix_nw) * (iy    - iy_nw);
 
       // calculate bilinear weighted pixel value and set output pixel
-      auto inp_ptr_NC = inputPtr + n * inp_sN;
-      auto out_ptr_NCHW = outputPtr + n * out_sN + h * out_sH + w * out_sW;
-      for (int c = 0; c < C; ++c, inp_ptr_NC += inp_sC, out_ptr_NCHW += out_sC) {
-        *out_ptr_NCHW = static_cast<scalar_t>(0);
-        if (within_bounds_2d(iy_nw, ix_nw, inp_H, inp_W)) {
-          *out_ptr_NCHW += inp_ptr_NC[iy_nw * inp_sH + ix_nw * inp_sW] * nw;
-        }
-        if (within_bounds_2d(iy_ne, ix_ne, inp_H, inp_W)) {
-          *out_ptr_NCHW += inp_ptr_NC[iy_ne * inp_sH + ix_ne * inp_sW] * ne;
-        }
-        if (within_bounds_2d(iy_sw, ix_sw, inp_H, inp_W)) {
-          *out_ptr_NCHW += inp_ptr_NC[iy_sw * inp_sH + ix_sw * inp_sW] * sw;
-        }
-        if (within_bounds_2d(iy_se, ix_se, inp_H, inp_W)) {
-          *out_ptr_NCHW += inp_ptr_NC[iy_se * inp_sH + ix_se * inp_sW] * se;
-        }
+      auto inp_ptr_NC = inputPtr + n * inp_sN + c * inp_sC;
+      auto out_ptr_NCHW = outputPtr + n * out_sN + c * out_sC + h * out_sH + w * out_sW;
+      *out_ptr_NCHW = static_cast<scalar_t>(0);
+      if (within_bounds_2d(iy_nw, ix_nw, inp_H, inp_W)) {
+        *out_ptr_NCHW += inp_ptr_NC[iy_nw * inp_sH + ix_nw * inp_sW] * nw;
+      }
+      if (within_bounds_2d(iy_ne, ix_ne, inp_H, inp_W)) {
+        *out_ptr_NCHW += inp_ptr_NC[iy_ne * inp_sH + ix_ne * inp_sW] * ne;
+      }
+      if (within_bounds_2d(iy_sw, ix_sw, inp_H, inp_W)) {
+        *out_ptr_NCHW += inp_ptr_NC[iy_sw * inp_sH + ix_sw * inp_sW] * sw;
+      }
+      if (within_bounds_2d(iy_se, ix_se, inp_H, inp_W)) {
+        *out_ptr_NCHW += inp_ptr_NC[iy_se * inp_sH + ix_se * inp_sW] * se;
       }
     } else if (interpolation_mode == torch::detail::GridSamplerInterpolation::Nearest) {
       int ix_nearest = static_cast<int>(roundf(ix));
       int iy_nearest = static_cast<int>(roundf(iy));
 
       // assign nearest neighor pixel value to output pixel
-      auto inp_ptr_NC = inputPtr + n * inp_sN;
-      auto out_ptr_NCHW = outputPtr + n * out_sN + h * out_sH + w * out_sW;
-      for (int c = 0; c < C; ++c, inp_ptr_NC += inp_sC, out_ptr_NCHW += out_sC) {
-        if (within_bounds_2d(iy_nearest, ix_nearest, inp_H, inp_W)) {
-          *out_ptr_NCHW = inp_ptr_NC[iy_nearest * inp_sH + ix_nearest * inp_sW];
-        } else {
-          *out_ptr_NCHW = static_cast<scalar_t>(0);
-        }
+      auto inp_ptr_NC = inputPtr + n * inp_sN + c * inp_sC;
+      auto out_ptr_NCHW = outputPtr + n * out_sN + c * out_sC + h * out_sH + w * out_sW;
+      if (within_bounds_2d(iy_nearest, ix_nearest, inp_H, inp_W)) {
+        *out_ptr_NCHW = inp_ptr_NC[iy_nearest * inp_sH + ix_nearest * inp_sW];
+      } else {
+        *out_ptr_NCHW = static_cast<scalar_t>(0);
       }
-
     }
   }
 }
@@ -148,8 +144,7 @@ int grid_sampler_2d_cuda(int batchSize, const void* inputPtr, const void* gridPt
   torch::detail::GridSamplerPadding padding_mode,
   bool align_corners, torch::detail::GridSamplerDataType dataType, cudaStream_t stream)
 {
-
-  int count = out_H * out_W * batchSize; // will have inner loop over C
+  int count = batchSize * C * out_H * out_W;
   if (count > 0) {
     if (dataType == torch::detail::GridSamplerDataType::GHALF)
     {
@@ -181,4 +176,3 @@ int grid_sampler_2d_cuda(int batchSize, const void* inputPtr, const void* gridPt
 
   return cudaGetLastError() != cudaSuccess;
 }
-
